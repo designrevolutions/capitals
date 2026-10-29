@@ -196,6 +196,33 @@
   .acc.bad { color: var(--bad); }
   .acc.none { color: var(--muted); font-weight: 400; }
   .note { margin: 16px 0 0; font-size: 12px; color: var(--muted); }
+  .head-actions { display: flex; gap: 14px; }
+  .data-table tbody tr { cursor: pointer; transition: background-color .12s; }
+  .data-table tbody tr:hover { background: var(--surface-2); }
+  .data-table tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Edit dialog */
+  .editor {
+    width: min(440px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--line); border-radius: 20px;
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+  }
+  .editor::backdrop { background: rgba(11, 12, 18, .45); }
+  .editor[open] { animation: rise .2s ease-out; }
+  .editor h2 { margin: 0 0 18px; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+  .editor form { display: block; padding: 0; border: 0; background: none; box-shadow: none; }
+  .fields { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .fields label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .fields label.wide { grid-column: span 2; }
+  .fields input {
+    width: 100%; font: inherit; font-size: 15px; font-weight: 400; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+  }
+  .fields input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow-1); }
+  .editor-actions { display: flex; justify-content: flex-end; align-items: center; gap: 18px; margin-top: 22px; }
+  @media (max-width: 460px) {
+    .editor { padding: 22px 18px; }
+    .fields { grid-template-columns: repeat(2, 1fr); }
+  }
 
   @media (max-width: 560px) {
     .tiles { grid-template-columns: repeat(2, 1fr); }
@@ -326,7 +353,14 @@
     </section>
 
     <section id="data" class="panel hidden" role="tabpanel">
-      <div class="list-head"><h2>All questions</h2></div>
+      <div class="list-head">
+        <h2>All questions</h2>
+        <span class="head-actions">
+          <button class="link" id="export" type="button" title="Download your saved data as a file">Export</button>
+          <button class="link" id="import" type="button" title="Replace your saved data with a file">Load</button>
+          <input type="file" id="import-file" class="hidden" accept=".json,application/json">
+        </span>
+      </div>
       <div class="tiles">
         <div class="tile"><b id="t-answered">0</b><span>Answered</span></div>
         <div class="tile"><b id="t-accuracy">—</b><span>Accuracy</span></div>
@@ -337,9 +371,16 @@
         <input type="search" id="search" class="search" placeholder="Search country or capital" aria-label="Search">
         <select id="sort" class="sort" aria-label="Sort by">
           <option value="weight">Highest weight</option>
+          <option value="weightAsc">Lowest weight</option>
           <option value="asked">Most asked</option>
+          <option value="askedAsc">Least asked</option>
+          <option value="right">Most right</option>
+          <option value="wrong">Most wrong</option>
           <option value="accuracy">Lowest accuracy</option>
-          <option value="az">A–Z</option>
+          <option value="accuracyDesc">Highest accuracy</option>
+          <option value="az">Country A–Z</option>
+          <option value="za">Country Z–A</option>
+          <option value="capital">Capital A–Z</option>
         </select>
       </div>
       <table class="data-table">
@@ -349,10 +390,29 @@
         <tbody id="data-rows"></tbody>
       </table>
       <p class="empty hidden" id="data-empty">No matches.</p>
-      <p class="note">“Mastered” means asked at least 3 times with 80%+ right. Weight is how likely a question is to come up.</p>
+      <p class="note">“Mastered” means asked at least 3 times with 80%+ right. Weight is how likely a question is to come up. Click a row to edit it.</p>
     </section>
   </main>
 </div>
+
+<dialog id="editor" class="editor">
+  <form method="dialog" id="edit-form">
+    <h2>Edit question</h2>
+    <div class="fields">
+      <label class="wide">Country<input id="e-country" required></label>
+      <label class="wide">Capital<input id="e-capital" required></label>
+      <label>Weight<input type="number" id="e-weight" min="1" step="1" required></label>
+      <label>Asked<input type="number" id="e-asked" min="0" step="1" required></label>
+      <label>Right<input type="number" id="e-right" min="0" step="1" required></label>
+      <label>Wrong<input type="number" id="e-wrong" min="0" step="1" required></label>
+    </div>
+    <p class="note">Separate alternative capitals with ; or /</p>
+    <div class="editor-actions">
+      <button class="link" id="e-cancel" type="button">Cancel</button>
+      <button class="btn" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="match.js"></script>
 <script>
@@ -400,12 +460,35 @@ function save(items) {
 }
 
 // Keep stored weights and mistake history, but pick up any countries added to the JSON file.
+// `id` is the country name in the JSON file, so a renamed country still matches;
+// items edited in the Data tab keep their own country and capital.
 function merge(stored, fresh) {
-  const byCountry = new Map((stored || []).map(q => [q.country, q]));
+  const byId = new Map((stored || []).map(q => [q.id ?? q.country, q]));
   return fresh.map(q => {
-    const old = byCountry.get(q.country);
-    return old ? { ...old, ...q, weight: clampWeight(old.weight) } : q;
+    const old = byId.get(q.country);
+    if (!old) return { ...q, id: q.country };
+    const fromFile = old.edited ? {} : { country: q.country, capital: q.capital };
+    return { ...old, ...fromFile, id: q.country, weight: clampWeight(old.weight) };
   });
+}
+
+// Accepts a file saved by Export, or any questions file parseQuestions understands.
+function parseImport(json) {
+  const isExport = Array.isArray(json) && json.length &&
+    json.every(q => q && typeof q.country === 'string' && typeof q.capital === 'string');
+  if (!isExport) return parseQuestions(json);
+  return json.map(q => {
+    const weight = Number(q.weight);
+    return { ...q, weight: clampWeight(Number.isFinite(weight) ? weight : DEFAULT_WEIGHT) };
+  });
+}
+
+function download(filename, text) {
+  const a = el('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function pickWeighted(items) {
@@ -484,9 +567,16 @@ const isMastered = q => q.asked >= 3 && accuracy(q) >= .8;
 
 const SORTERS = {
   weight: (a, b) => b.weight - a.weight,
+  weightAsc: (a, b) => a.weight - b.weight,
   asked: (a, b) => (b.asked || 0) - (a.asked || 0),
+  askedAsc: (a, b) => (a.asked || 0) - (b.asked || 0),
+  right: (a, b) => (b.right || 0) - (a.right || 0),
+  wrong: (a, b) => (b.wrong || 0) - (a.wrong || 0),
   accuracy: (a, b) => (accuracy(a) ?? 2) - (accuracy(b) ?? 2), // unasked last
+  accuracyDesc: (a, b) => (accuracy(b) ?? -1) - (accuracy(a) ?? -1), // unasked last
   az: () => 0,
+  za: (a, b) => b.country.localeCompare(a.country),
+  capital: (a, b) => a.capital.localeCompare(b.capital),
 };
 
 function renderData(items) {
@@ -505,6 +595,8 @@ function renderData(items) {
 
   $('data-rows').replaceChildren(...rows.map(q => {
     const tr = el('tr');
+    tr.dataset.index = items.indexOf(q);
+    tr.tabIndex = 0;
     const name = el('td', 'd-name');
     name.append(el('span', 'd-country', q.country), el('span', 'd-capital', q.capital));
 
@@ -644,6 +736,79 @@ function startQuiz(items) {
 
   $('search').addEventListener('input', () => renderData(items));
   $('sort').addEventListener('change', () => renderData(items));
+
+  // Editing a row
+  const editor = $('editor');
+  const NUM_FIELDS = ['weight', 'asked', 'right', 'wrong'];
+  let editing = null;
+  const openEditor = tr => {
+    if (!tr) return;
+    editing = items[tr.dataset.index];
+    $('e-country').value = editing.country;
+    $('e-capital').value = editing.capital;
+    for (const f of NUM_FIELDS) $('e-' + f).value = editing[f] || 0;
+    editor.showModal();
+    $('e-country').focus();
+  };
+  $('data-rows').addEventListener('click', e => openEditor(e.target.closest('tr')));
+  $('data-rows').addEventListener('keydown', e => {
+    if (e.key === 'Enter') openEditor(e.target.closest('tr'));
+  });
+  $('e-cancel').addEventListener('click', () => editor.close());
+
+  $('edit-form').addEventListener('submit', e => {
+    const country = $('e-country').value.trim();
+    const capital = $('e-capital').value.trim();
+    if (!country || !capital) {
+      e.preventDefault();
+      alert('Country and capital can\'t be empty.');
+      return;
+    }
+    if (items.some(q => q !== editing && q.country.toLowerCase() === country.toLowerCase())) {
+      e.preventDefault();
+      alert(`There is already a question for ${country}.`);
+      return;
+    }
+    const [weight, asked, right, wrong] = NUM_FIELDS.map(f => Math.max(0, Math.round(Number($('e-' + f).value) || 0)));
+    if (country !== editing.country || capital !== editing.capital) editing.edited = true;
+    Object.assign(editing, {
+      country, capital, right, wrong,
+      weight: clampWeight(weight),
+      asked: Math.max(asked, right + wrong), // can't have more answers than times asked
+    });
+    if (!wrong) { delete editing.lastGuess; delete editing.lastWrongAt; }
+    save(items);
+    renderMistakes(items);
+    renderScore(items);
+    renderData(items);
+    if (editing === q) {
+      $('country').textContent = q.country;
+      $('weight').textContent = q.weight;
+    }
+  });
+
+  // Export / load browser storage
+  $('export').addEventListener('click', () => {
+    let data = null;
+    try { data = localStorage.getItem(STORAGE_KEY); } catch {}
+    if (!data) { alert('Nothing is saved in this browser yet.'); return; }
+    download(`capitals-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(JSON.parse(data), null, 2));
+  });
+  $('import').addEventListener('click', () => $('import-file').click());
+  $('import-file').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = ''; // so picking the same file again still fires
+    if (!file) return;
+    try {
+      const loaded = parseImport(JSON.parse(await file.text()));
+      if (!loaded.length) throw new Error('No questions found');
+      if (!confirm(`Replace your saved data with ${loaded.length} questions from ${file.name}?`)) return;
+      save(loaded);
+      location.reload();
+    } catch (err) {
+      alert('Could not load that file: ' + err.message);
+    }
+  });
 
   $('clear').addEventListener('click', () => {
     if (!confirm('Clear your mistakes list? Weights are kept.')) return;
