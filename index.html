@@ -49,7 +49,8 @@
 <main class="card">
   <div id="loader" class="hidden">
     <p class="label">Couldn't load questions.json automatically.</p>
-    <p>Pick the file to load it (only needed once):</p>
+    <p>Browsers block pages opened straight from disk from reading other files.
+       Run <strong>start.bat</strong> instead, or pick the file here (only needed once):</p>
     <input type="file" id="file" accept=".json,application/json">
   </div>
 
@@ -72,7 +73,10 @@
 <script>
 const STORAGE_KEY = 'capitalsQuiz';
 const DEFAULT_WEIGHT = 10;
+const MIN_WEIGHT = 1; // weights must never reach 0 or go negative
 const STEP = 5;
+
+const clampWeight = w => Math.max(MIN_WEIGHT, w);
 
 // Accepts an array of objects, an object wrapping such an array, or a
 // { country: capital } / { country: { capital, weight } } map.
@@ -97,7 +101,7 @@ function parseQuestions(json) {
     return {
       country: String(pick(item, ['country', 'name', 'question']) ?? '').trim(),
       capital: String(pick(item, ['capital', 'city', 'answer']) ?? '').trim(),
-      weight: Number.isFinite(weight) ? Math.max(0, weight) : DEFAULT_WEIGHT,
+      weight: clampWeight(Number.isFinite(weight) ? weight : DEFAULT_WEIGHT),
     };
   }).filter(q => q.country && q.capital);
 }
@@ -115,13 +119,12 @@ function merge(stored, fresh) {
   const byCountry = new Map((stored || []).map(q => [q.country, q]));
   return fresh.map(q => {
     const old = byCountry.get(q.country);
-    return old ? { ...q, weight: old.weight } : q;
+    return old ? { ...q, weight: clampWeight(old.weight) } : q;
   });
 }
 
 function pickWeighted(items) {
   const total = items.reduce((sum, q) => sum + q.weight, 0);
-  if (total <= 0) return Math.floor(Math.random() * items.length);
   let r = Math.random() * total;
   for (let i = 0; i < items.length; i++) {
     r -= items[i].weight;
@@ -151,7 +154,7 @@ function startQuiz(items) {
 
     const accepted = q.capital.split(/[;/|]/).map(normalize);
     const correct = accepted.includes(normalize(guess));
-    q.weight = Math.max(0, q.weight + (correct ? -STEP : STEP));
+    q.weight = clampWeight(q.weight + (correct ? -STEP : STEP));
     save(items);
 
     $('result').className = 'result ' + (correct ? 'good' : 'bad');
@@ -198,7 +201,7 @@ function showLoader(stored) {
     startQuiz(items);
   } catch {
     // Opened from file:// (fetch blocked) or file unavailable: fall back to stored data.
-    if (stored && stored.length) startQuiz(stored);
+    if (stored && stored.length) startQuiz(stored.map(q => ({ ...q, weight: clampWeight(q.weight) })));
     else showLoader(stored);
   }
 })();
