@@ -6,124 +6,154 @@
 <title>Capital Cities Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #efe6d5;
-    --bg-dot: #e2d6bf;
-    --card: #fffaf0;
-    --ink: #22201c;
-    --muted: #7a7264;
-    --line: #d9ccb2;
-    --accent: #d9542b;
-    --accent-ink: #fffaf0;
-    --good: #2f7d4f;
-    --bad: #c2362b;
-    --field: #f7efdf;
-    --shadow: 0 1px 0 #d4c6aa, 0 18px 40px -18px rgba(70, 50, 20, .35);
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #f1f2f6;
+    --ink: #0f1222;
+    --muted: #6a6f85;
+    --line: #e3e5ec;
+    --accent: #5b4cf0;
+    --accent-2: #a64cf0;
+    --accent-ink: #ffffff;
+    --good: #12a46b;
+    --good-soft: #e3f6ee;
+    --bad: #e5484d;
+    --bad-soft: #fdecec;
+    --glow-1: rgba(91, 76, 240, .18);
+    --glow-2: rgba(240, 76, 166, .12);
+    --shadow: 0 1px 2px rgba(15, 18, 34, .04), 0 12px 32px -12px rgba(15, 18, 34, .12);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1b1916;
-      --bg-dot: #26231f;
-      --card: #262320;
-      --ink: #f1eadc;
-      --muted: #a69d8c;
-      --line: #3d3832;
-      --accent: #f0794f;
-      --accent-ink: #1b1916;
-      --good: #5cc488;
-      --bad: #ff6f5e;
-      --field: #1f1d1a;
-      --shadow: 0 1px 0 #11100e, 0 18px 40px -18px rgba(0, 0, 0, .7);
+      --bg: #0b0c12;
+      --surface: #14151e;
+      --surface-2: #1c1d29;
+      --ink: #f2f3f8;
+      --muted: #8f93a8;
+      --line: #262838;
+      --accent: #7f72ff;
+      --accent-2: #c07bff;
+      --accent-ink: #ffffff;
+      --good: #34d399;
+      --good-soft: rgba(52, 211, 153, .12);
+      --bad: #ff6b6f;
+      --bad-soft: rgba(255, 107, 111, .12);
+      --glow-1: rgba(127, 114, 255, .22);
+      --glow-2: rgba(192, 123, 255, .12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 40px -16px rgba(0, 0, 0, .6);
     }
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
-    background-color: var(--bg);
-    background-image: radial-gradient(var(--bg-dot) 1.2px, transparent 1.2px);
-    background-size: 18px 18px;
+    margin: 0; min-height: 100vh; padding: 48px 16px;
+    background:
+      radial-gradient(600px 400px at 15% -5%, var(--glow-1), transparent 70%),
+      radial-gradient(500px 400px at 100% 10%, var(--glow-2), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--ink);
-    font: 16px/1.5 "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 16px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+  .app { max-width: 520px; margin: 0 auto; }
 
-  /* Postcard */
-  .card {
-    position: relative; width: 100%; max-width: 480px;
-    background: var(--card); border-radius: 6px; padding: 32px 28px 24px;
-    box-shadow: var(--shadow);
-    transform: rotate(-.6deg);
+  /* Header + tabs */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+  .logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; color: #fff; font-size: 15px;
   }
-  .card::before {           /* airmail stripe */
-    content: ""; position: absolute; inset: 0 0 auto 0; height: 8px; border-radius: 6px 6px 0 0;
-    background: repeating-linear-gradient(-45deg,
-      var(--accent) 0 12px, transparent 12px 20px, #2b5aa8 20px 32px, transparent 32px 40px);
-    opacity: .85;
+  .tabs { display: flex; padding: 4px; gap: 2px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
+  .tab {
+    font: 600 14px/1 Inter, system-ui, sans-serif; color: var(--muted);
+    padding: 9px 14px; border: 0; border-radius: 9px; background: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background-color .15s, color .15s;
   }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
-  .eyebrow {
-    margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--muted);
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(15, 18, 34, .1); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .count {
+    min-width: 20px; padding: 3px 6px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: var(--bad-soft); color: var(--bad); text-align: center;
   }
-  .postmark {
-    flex: none; width: 74px; height: 74px; border-radius: 50%;
-    border: 2px dashed var(--line); display: grid; place-content: center; text-align: center;
-    color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    transform: rotate(8deg);
-  }
-  .postmark b { display: block; font: 800 22px/1 "Fraunces", Georgia, serif; color: var(--ink); letter-spacing: 0; }
+  .count:empty { display: none; }
 
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 32px; box-shadow: var(--shadow); }
+  .label { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
   h1 {
-    margin: 0 0 24px; font: 800 clamp(30px, 8vw, 42px)/1.08 "Fraunces", Georgia, serif;
-    letter-spacing: -.01em; overflow-wrap: anywhere;
+    margin: 0 0 28px; font-weight: 800; font-size: clamp(32px, 9vw, 48px); line-height: 1.05;
+    letter-spacing: -.035em; overflow-wrap: anywhere;
   }
-  h1 .q { color: var(--accent); }
+  h1 .q { background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-  form { display: flex; gap: 10px; }
-  input[type=text] {
-    flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 14px;
-    border: 2px solid var(--line); border-radius: 10px; background: var(--field); color: var(--ink);
-    transition: border-color .15s, box-shadow .15s;
+  form {
+    display: flex; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--surface-2); transition: border-color .15s, box-shadow .15s;
   }
-  input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
-  input[type=text]:disabled { opacity: .7; }
+  form:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--glow-1); }
+  input[type=text] {
+    flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 10px 12px;
+    border: 0; background: none; color: var(--ink);
+  }
+  input[type=text]:focus { outline: none; }
+  input[type=text]::placeholder { color: var(--muted); }
+  input[type=text]:disabled { opacity: .6; }
 
   .btn-wrap { position: relative; flex: none; }
   .btn {
-    font: 700 16px/1 "DM Sans", system-ui, sans-serif; padding: 14px 20px; min-width: 118px;
-    border: 0; border-radius: 10px; cursor: pointer;
-    background: var(--accent); color: var(--accent-ink);
-    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 60%, #000);
-    transition: transform .1s, box-shadow .1s, background-color .2s;
+    font: 600 15px/1 Inter, system-ui, sans-serif; padding: 13px 20px; min-width: 104px;
+    border: 0; border-radius: 10px; cursor: pointer; color: var(--accent-ink);
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    transition: transform .12s, filter .15s;
   }
-  .btn:hover { transform: translateY(-1px); }
-  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, #000); }
-  .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-  .btn.good { background: var(--good); box-shadow: 0 4px 0 color-mix(in srgb, var(--good) 60%, #000); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .btn.good { background: var(--good); }
 
-  /* Result stamp */
-  .result-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; min-height: 48px; }
-  .stamp {
-    flex: none; pointer-events: none;
-    font: 800 22px/1 "Fraunces", Georgia, serif; letter-spacing: .08em; text-transform: uppercase;
-    padding: 8px 12px; border: 3px solid currentColor; border-radius: 8px;
-    opacity: 0;
+  .result {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    min-height: 34px; margin: 18px 0 0; font-size: 16px; color: var(--muted);
   }
-  .stamp.good { color: var(--good); }
-  .stamp.bad { color: var(--bad); }
-  .stamp.show { animation: stamp .45s cubic-bezier(.2, .9, .3, 1.3) forwards; }
-
-  .answer-line { margin: 0; font-size: 17px; }
-  .answer-line strong { font-family: "Fraunces", Georgia, serif; font-size: 20px; }
+  .result:empty { visibility: hidden; }
+  .result strong { color: var(--ink); font-weight: 600; }
+  .pill { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: .06em; }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
 
   .meta {
-    margin-top: 22px; padding-top: 14px; border-top: 2px dotted var(--line);
-    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
     color: var(--muted); font-size: 13px;
   }
-  .link { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); text-decoration: underline; cursor: pointer; }
-  .link:hover { color: var(--ink); }
+  .weight b { color: var(--ink); font-weight: 600; }
+  .link { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .link:hover { color: var(--ink); text-decoration: underline; }
+
+  /* Mistakes list */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .list-head h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+  .mistakes { list-style: none; margin: 0; padding: 0; }
+  .mistakes li {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+    padding: 14px 0; border-top: 1px solid var(--line);
+  }
+  .mistakes li:first-child { border-top: 0; padding-top: 0; }
+  .m-country { font-weight: 600; }
+  .m-capital { font-weight: 600; color: var(--accent); text-align: right; }
+  .m-guess { font-size: 13px; color: var(--muted); }
+  .m-guess s { color: var(--bad); text-decoration-thickness: 1.5px; }
+  .m-times { font-size: 12px; color: var(--muted); text-align: right; }
+  .mistakes li.empty { display: block; }
+  .empty { text-align: center; color: var(--muted); padding: 28px 0 12px; }
+  .empty b { display: block; font-size: 32px; margin-bottom: 6px; }
+
   .hidden { display: none !important; }
   #loader p { margin: 0 0 14px; }
 
@@ -157,12 +187,8 @@
     70% { transform: scale(1.08); opacity: 1; }
     100% { transform: scale(1); }
   }
-  @keyframes stamp {
-    0% { transform: scale(2.2) rotate(-4deg); opacity: 0; }
-    100% { transform: scale(1) rotate(-12deg); opacity: .9; }
-  }
   @keyframes rise {
-    from { transform: translateY(8px); opacity: 0; }
+    from { transform: translateY(6px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
 
@@ -170,7 +196,7 @@
   .btn.shake { animation: shake .35s ease-in-out; }
   .btn.burst { animation: burst .3s ease-in forwards; }
   .btn.pop-in { animation: pop-in .35s ease-out; }
-  .answer-line.show { animation: rise .3s ease-out; }
+  .result.show, .panel.show { animation: rise .25s ease-out; }
   .shard {
     position: absolute; border-radius: 3px; background: var(--bad); pointer-events: none;
     animation: shard .7s cubic-bezier(.15, .7, .3, 1) forwards;
@@ -179,46 +205,58 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 1ms !important; transition: none !important; }
   }
-  @media (max-width: 420px) {
-    form { flex-direction: column; }
-    .btn { width: 100%; }
-    .stamp { font-size: 18px; }
+  @media (max-width: 460px) {
+    body { padding: 24px 16px; }
+    .card { padding: 24px 20px; }
+    .brand span:last-child { display: none; }
   }
 </style>
 </head>
 <body>
-<main class="card">
-  <div id="loader" class="hidden">
-    <p class="eyebrow">Couldn't load questions.json automatically</p>
-    <p>Browsers block pages opened straight from disk from reading other files.
-       Run <strong>start.bat</strong> instead, or pick the file here (only needed once):</p>
-    <input type="file" id="file" accept=".json,application/json">
-  </div>
+<div class="app">
+  <header>
+    <div class="brand"><span class="logo" aria-hidden="true">✦</span><span>Capitals</span></div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" aria-selected="true" data-panel="quiz">Quiz</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="mistakes">Mistakes <span class="count" id="count"></span></button>
+    </nav>
+  </header>
 
-  <div id="quiz" class="hidden">
-    <div class="top">
-      <p class="eyebrow">Greetings from&hellip;</p>
-      <div class="postmark" title="Higher weight = asked more often">Weight<b id="weight"></b></div>
+  <main class="card">
+    <div id="loader" class="hidden">
+      <p class="label">Couldn't load questions.json automatically</p>
+      <p>Browsers block pages opened straight from disk from reading other files.
+         Open the page from a web server, or pick the file here (only needed once):</p>
+      <input type="file" id="file" accept=".json,application/json">
     </div>
-    <h1><span id="country"></span><span class="q">?</span></h1>
 
-    <form id="form" autocomplete="off">
-      <input type="text" id="answer" placeholder="Name the capital" aria-label="Capital city">
-      <div class="btn-wrap" id="btn-wrap">
-        <button type="submit" class="btn" id="btn">Check</button>
+    <section id="quiz" class="panel hidden" role="tabpanel">
+      <p class="label">What's the capital of</p>
+      <h1><span id="country"></span><span class="q">?</span></h1>
+
+      <form id="form" autocomplete="off">
+        <input type="text" id="answer" placeholder="Type a city…" aria-label="Capital city">
+        <div class="btn-wrap" id="btn-wrap">
+          <button type="submit" class="btn" id="btn">Check</button>
+        </div>
+      </form>
+      <p id="result" class="result" aria-live="polite"></p>
+
+      <div class="meta">
+        <span class="weight">Weight <b id="weight"></b> · higher comes up more</span>
+        <button class="link" id="reset" type="button">Reset progress</button>
       </div>
-    </form>
-    <div class="result-row">
-      <p id="result" class="answer-line" aria-live="polite"></p>
-      <div id="stamp" class="stamp"></div>
-    </div>
+    </section>
 
-    <div class="meta">
-      <span>Get it right and it comes up less often.</span>
-      <button class="link" id="reset" type="button">Reset progress</button>
-    </div>
-  </div>
-</main>
+    <section id="mistakes" class="panel hidden" role="tabpanel">
+      <div class="list-head">
+        <h2>Your mistakes</h2>
+        <button class="link" id="clear" type="button">Clear list</button>
+      </div>
+      <ul class="mistakes" id="mistake-list"></ul>
+    </section>
+  </main>
+</div>
 
 <script>
 const STORAGE_KEY = 'capitalsQuiz';
@@ -264,12 +302,12 @@ function save(items) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
 }
 
-// Keep stored weights, but pick up any countries added to the JSON file.
+// Keep stored weights and mistake history, but pick up any countries added to the JSON file.
 function merge(stored, fresh) {
   const byCountry = new Map((stored || []).map(q => [q.country, q]));
   return fresh.map(q => {
     const old = byCountry.get(q.country);
-    return old ? { ...q, weight: clampWeight(old.weight) } : q;
+    return old ? { ...old, ...q, weight: clampWeight(old.weight) } : q;
   });
 }
 
@@ -288,11 +326,18 @@ const normalize = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 const $ = id => document.getElementById(id);
 
+const el = (tag, cls, text) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+};
+
 // Restarts a CSS animation class on an element.
-function play(el, cls) {
-  el.classList.remove(cls);
-  void el.offsetWidth;
-  el.classList.add(cls);
+function play(node, cls) {
+  node.classList.remove(cls);
+  void node.offsetWidth;
+  node.classList.add(cls);
 }
 
 function celebrate(btn) {
@@ -309,8 +354,7 @@ function explode(btn, wrap) {
     const cols = 5, rows = 3;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const s = document.createElement('span');
-        s.className = 'shard';
+        const s = el('span', 'shard');
         s.style.left = (c * w / cols) + 'px';
         s.style.top = (r * h / rows) + 'px';
         s.style.width = (w / cols) + 'px';
@@ -334,9 +378,51 @@ function explode(btn, wrap) {
   }, { once: true });
 }
 
+// Most-missed first, then most recent.
+function renderMistakes(items) {
+  const missed = items.filter(q => q.wrong > 0)
+    .sort((a, b) => b.wrong - a.wrong || (b.lastWrongAt || 0) - (a.lastWrongAt || 0));
+  $('count').textContent = missed.length || '';
+  $('clear').classList.toggle('hidden', !missed.length);
+
+  const list = $('mistake-list');
+  list.replaceChildren();
+  if (!missed.length) {
+    const empty = el('li', 'empty');
+    empty.append(el('b', null, '🎉'), 'No mistakes yet. Keep it up!');
+    list.append(empty);
+    return;
+  }
+  for (const q of missed) {
+    const li = el('li');
+    const guess = el('span', 'm-guess');
+    if (q.lastGuess) guess.append('You said ', el('s', null, q.lastGuess));
+    else guess.textContent = 'No answer given';
+    li.append(
+      el('span', 'm-country', q.country),
+      el('span', 'm-capital', q.capital),
+      guess,
+      el('span', 'm-times', q.wrong === 1 ? 'Missed once' : `Missed ${q.wrong}×`),
+    );
+    list.append(li);
+  }
+}
+
+function showPanel(name) {
+  for (const tab of $('tabs').children) {
+    tab.setAttribute('aria-selected', tab.dataset.panel === name);
+  }
+  for (const id of ['quiz', 'mistakes']) {
+    $(id).classList.toggle('hidden', id !== name);
+  }
+  play($(name), 'show');
+  if (name === 'quiz' && !$('answer').disabled) $('answer').focus();
+}
+
 function startQuiz(items) {
   $('loader').classList.add('hidden');
-  $('quiz').classList.remove('hidden');
+  renderMistakes(items);
+  showPanel('quiz');
 
   const q = items[pickWeighted(items)];
   $('country').textContent = q.country;
@@ -350,34 +436,48 @@ function startQuiz(items) {
     answered = true;
 
     // An empty answer counts as wrong.
-    const guess = normalize($('answer').value);
+    const raw = $('answer').value.trim();
+    const guess = normalize(raw);
     const accepted = q.capital.split(/[;/|]/).map(normalize);
     const correct = guess !== '' && accepted.includes(guess);
     q.weight = clampWeight(q.weight + (correct ? -STEP : STEP));
+    if (!correct) {
+      q.wrong = (q.wrong || 0) + 1;
+      q.lastGuess = raw;
+      q.lastWrongAt = Date.now();
+    }
     save(items);
+    renderMistakes(items);
 
     $('answer').disabled = true;
     $('weight').textContent = q.weight;
 
-    const stamp = $('stamp');
-    stamp.textContent = correct ? 'Correct' : 'Wrong';
-    stamp.className = 'stamp ' + (correct ? 'good' : 'bad');
-    play(stamp, 'show');
-
     const result = $('result');
-    result.innerHTML = '';
-    result.append(correct ? 'Spot on — it\'s ' : 'The capital is ');
-    const name = document.createElement('strong');
-    name.textContent = q.capital;
-    result.append(name, '.');
+    result.replaceChildren(
+      el('span', 'pill ' + (correct ? 'good' : 'bad'), correct ? 'Correct' : 'Wrong'),
+      el('span', null, correct ? 'It\'s' : 'The answer is'),
+      el('strong', null, q.capital),
+    );
     play(result, 'show');
 
     if (correct) celebrate($('btn'));
     else explode($('btn'), $('btn-wrap'));
   });
 
+  $('tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (tab) showPanel(tab.dataset.panel);
+  });
+
+  $('clear').addEventListener('click', () => {
+    if (!confirm('Clear your mistakes list? Weights are kept.')) return;
+    for (const q of items) { delete q.wrong; delete q.lastGuess; delete q.lastWrongAt; }
+    save(items);
+    renderMistakes(items);
+  });
+
   $('reset').addEventListener('click', () => {
-    if (!confirm('Reset all weights?')) return;
+    if (!confirm('Reset all weights and your mistakes list?')) return;
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     location.reload();
   });
