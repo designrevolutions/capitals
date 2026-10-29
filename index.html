@@ -86,6 +86,13 @@
   /* Card */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 32px; box-shadow: var(--shadow); }
   .label { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .quiz-top .label { margin: 0; }
+  .score {
+    flex: none; font-size: 13px; font-weight: 600; color: var(--good);
+    background: var(--good-soft); padding: 5px 10px; border-radius: 999px;
+  }
+  .score.bump { animation: pop-in .35s ease-out; }
   h1 {
     margin: 0 0 28px; font-weight: 800; font-size: clamp(32px, 9vw, 48px); line-height: 1.05;
     letter-spacing: -.035em; overflow-wrap: anywhere;
@@ -231,7 +238,10 @@
     </div>
 
     <section id="quiz" class="panel hidden" role="tabpanel">
-      <p class="label">What's the capital of</p>
+      <div class="quiz-top">
+        <p class="label">What's the capital of</p>
+        <span class="score" title="Total correct answers">✓ <b id="right-count">0</b> right</span>
+      </div>
       <h1><span id="country"></span><span class="q">?</span></h1>
 
       <form id="form" autocomplete="off">
@@ -258,6 +268,7 @@
   </main>
 </div>
 
+<script src="match.js"></script>
 <script>
 const STORAGE_KEY = 'capitalsQuiz';
 const DEFAULT_WEIGHT = 10;
@@ -378,6 +389,10 @@ function explode(btn, wrap) {
   }, { once: true });
 }
 
+function renderScore(items) {
+  $('right-count').textContent = items.reduce((sum, q) => sum + (q.right || 0), 0);
+}
+
 // Most-missed first, then most recent.
 function renderMistakes(items) {
   const missed = items.filter(q => q.wrong > 0)
@@ -422,6 +437,7 @@ function showPanel(name) {
 function startQuiz(items) {
   $('loader').classList.add('hidden');
   renderMistakes(items);
+  renderScore(items);
   showPanel('quiz');
 
   const q = items[pickWeighted(items)];
@@ -439,23 +455,28 @@ function startQuiz(items) {
     const raw = $('answer').value.trim();
     const guess = normalize(raw);
     const accepted = q.capital.split(/[;/|]/).map(normalize);
-    const correct = guess !== '' && accepted.includes(guess);
+    const exact = guess !== '' && accepted.includes(guess);
+    const correct = exact || accepted.some(a => isCloseMatch(guess, a));
     q.weight = clampWeight(q.weight + (correct ? -STEP : STEP));
-    if (!correct) {
+    if (correct) {
+      q.right = (q.right || 0) + 1;
+    } else {
       q.wrong = (q.wrong || 0) + 1;
       q.lastGuess = raw;
       q.lastWrongAt = Date.now();
     }
     save(items);
     renderMistakes(items);
+    renderScore(items);
+    if (correct) play($('right-count').parentElement, 'bump');
 
     $('answer').disabled = true;
     $('weight').textContent = q.weight;
 
     const result = $('result');
     result.replaceChildren(
-      el('span', 'pill ' + (correct ? 'good' : 'bad'), correct ? 'Correct' : 'Wrong'),
-      el('span', null, correct ? 'It\'s' : 'The answer is'),
+      el('span', 'pill ' + (correct ? 'good' : 'bad'), exact ? 'Correct' : correct ? 'Close enough' : 'Wrong'),
+      el('span', null, exact ? 'It\'s' : correct ? 'It\'s spelled' : 'The answer is'),
       el('strong', null, q.capital),
     );
     play(result, 'show');
@@ -477,7 +498,7 @@ function startQuiz(items) {
   });
 
   $('reset').addEventListener('click', () => {
-    if (!confirm('Reset all weights and your mistakes list?')) return;
+    if (!confirm('Reset all weights, your score and your mistakes list?')) return;
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     location.reload();
   });
