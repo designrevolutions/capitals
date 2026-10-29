@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capital Cities Quiz</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --text: #1d1d1b; --muted: #6b6a66;
+    --accent: #2f5bd3; --good: #1f8a4c; --bad: #c4372f; --border: #dddad2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --card: #222220; --text: #eeede8; --muted: #a09f99;
+      --accent: #7c9dff; --good: #4cc27f; --bad: #ff6b61; --border: #3a3936;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px;
+  }
+  .card {
+    width: 100%; max-width: 460px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px;
+  }
+  .label { color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+  h1 { font-size: 26px; margin: 0 0 20px; line-height: 1.25; }
+  form { display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1; min-width: 0; font: inherit; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  button {
+    font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; cursor: pointer;
+    background: var(--accent); color: #fff;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .result { margin-top: 18px; font-weight: 600; }
+  .result.good { color: var(--good); }
+  .result.bad { color: var(--bad); }
+  .meta { margin-top: 18px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .link { background: none; color: var(--muted); padding: 0; text-decoration: underline; font-size: 13px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div id="loader" class="hidden">
+    <p class="label">Couldn't load questions.json automatically.</p>
+    <p>Pick the file to load it (only needed once):</p>
+    <input type="file" id="file" accept=".json,application/json">
+  </div>
+
+  <div id="quiz" class="hidden">
+    <p class="label">What is the capital of</p>
+    <h1 id="country"></h1>
+    <form id="form" autocomplete="off">
+      <input type="text" id="answer" placeholder="Your answer" aria-label="Your answer">
+      <button type="submit" id="submit">Check</button>
+    </form>
+    <p id="result" class="result"></p>
+    <button id="next" class="hidden" type="button">Next question</button>
+    <div class="meta">
+      <span id="weight"></span>
+      <button class="link" id="reset" type="button">Reset progress</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const STORAGE_KEY = 'capitalsQuiz';
+const DEFAULT_WEIGHT = 10;
+const STEP = 5;
+
+// Accepts an array of objects, an object wrapping such an array, or a
+// { country: capital } / { country: { capital, weight } } map.
+function parseQuestions(json) {
+  const pick = (obj, names) => {
+    for (const key of Object.keys(obj)) {
+      if (names.includes(key.toLowerCase())) return obj[key];
+    }
+  };
+  let list = json;
+  if (!Array.isArray(list)) {
+    const nested = Object.values(json).find(Array.isArray);
+    if (nested) {
+      list = nested;
+    } else {
+      list = Object.entries(json).map(([country, v]) =>
+        typeof v === 'object' ? { country, ...v } : { country, capital: v });
+    }
+  }
+  return list.map(item => {
+    const weight = Number(pick(item, ['weight']));
+    return {
+      country: String(pick(item, ['country', 'name', 'question']) ?? '').trim(),
+      capital: String(pick(item, ['capital', 'city', 'answer']) ?? '').trim(),
+      weight: Number.isFinite(weight) ? Math.max(0, weight) : DEFAULT_WEIGHT,
+    };
+  }).filter(q => q.country && q.capital);
+}
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; } catch { return null; }
+}
+
+function save(items) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+}
+
+// Keep stored weights, but pick up any countries added to the JSON file.
+function merge(stored, fresh) {
+  const byCountry = new Map((stored || []).map(q => [q.country, q]));
+  return fresh.map(q => {
+    const old = byCountry.get(q.country);
+    return old ? { ...q, weight: old.weight } : q;
+  });
+}
+
+function pickWeighted(items) {
+  const total = items.reduce((sum, q) => sum + q.weight, 0);
+  if (total <= 0) return Math.floor(Math.random() * items.length);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= items[i].weight;
+    if (r < 0) return i;
+  }
+  return items.length - 1;
+}
+
+const normalize = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+function startQuiz(items) {
+  const $ = id => document.getElementById(id);
+  $('loader').classList.add('hidden');
+  $('quiz').classList.remove('hidden');
+
+  const index = pickWeighted(items);
+  const q = items[index];
+  $('country').textContent = q.country;
+  $('weight').textContent = `Weight: ${q.weight}`;
+  $('answer').focus();
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const guess = $('answer').value;
+    if (!guess.trim() || $('submit').disabled) return;
+
+    const accepted = q.capital.split(/[;/|]/).map(normalize);
+    const correct = accepted.includes(normalize(guess));
+    q.weight = Math.max(0, q.weight + (correct ? -STEP : STEP));
+    save(items);
+
+    $('result').className = 'result ' + (correct ? 'good' : 'bad');
+    $('result').textContent = correct ? `Correct! It's ${q.capital}.` : `Not quite — it's ${q.capital}.`;
+    $('weight').textContent = `Weight: ${q.weight}`;
+    $('answer').disabled = $('submit').disabled = true;
+    $('next').classList.remove('hidden');
+    $('next').focus();
+  }, { once: false });
+
+  $('next').addEventListener('click', () => location.reload());
+  $('reset').addEventListener('click', () => {
+    if (!confirm('Reset all weights?')) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    location.reload();
+  });
+}
+
+function showLoader(stored) {
+  const loader = document.getElementById('loader');
+  loader.classList.remove('hidden');
+  document.getElementById('file').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const items = merge(stored, parseQuestions(JSON.parse(await file.text())));
+      if (!items.length) throw new Error('No questions found');
+      save(items);
+      startQuiz(items);
+    } catch (err) {
+      alert('Could not read that file: ' + err.message);
+    }
+  });
+}
+
+(async function init() {
+  const stored = load();
+  try {
+    const res = await fetch('questions.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const items = merge(stored, parseQuestions(await res.json()));
+    if (!items.length) throw new Error('No questions found');
+    save(items);
+    startQuiz(items);
+  } catch {
+    // Opened from file:// (fetch blocked) or file unavailable: fall back to stored data.
+    if (stored && stored.length) startQuiz(stored);
+    else showLoader(stored);
+  }
+})();
+</script>
+</body>
+</html>
