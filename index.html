@@ -49,8 +49,9 @@
     }
   }
   * { box-sizing: border-box; }
+  html { overflow-x: clip; -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; min-height: 100vh; padding: 48px 16px;
+    margin: 0; min-height: 100vh; min-height: 100svh; padding: 48px 16px;
     background:
       radial-gradient(600px 400px at 15% -5%, var(--glow-1), transparent 70%),
       radial-gradient(500px 400px at 100% 10%, var(--glow-2), transparent 70%),
